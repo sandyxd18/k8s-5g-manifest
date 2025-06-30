@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scp-cm
+  labels:
+    app: open5gs
+    nf: scp
+data:
+  scpcfg.yaml: |
+    logger:
+      level: info
+      # file: 
+      #   path: /var/log/open5gs/scp.log
+
+    global:
+      max:
+        ue: 1024
+
+    scp:
+      sbi:
+        server:
+          - dev: eth0
+            advertise: scp-nscp
+            port: 80
+        client:
+          nrf:
+            - uri: http://nrf-nnrf:80
+      no_sepp: true

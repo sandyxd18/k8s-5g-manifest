@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: udr-cm
+  labels:
+    app: open5gs
+data:
+  udrcfg.yaml: |
+    db_uri: mongodb://mongodb/open5gs
+
+    logger:
+      level: info
+      # file: 
+      #   path: /var/log/open5gs/udr.log
+
+    global:
+      max:
+        ue: 1024
+        
+    udr:
+      sbi:
+        server:
+          - dev: eth0
+            advertise: udr-nudr
+            port: 80
+        client:
+          scp:
+            - uri: http://scp-nscp:80

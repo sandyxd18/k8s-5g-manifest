@@ -1,0 +1,8 @@
+resources:
+  - deployment.yaml
+
+configMapGenerator:
+  - name: ue1-cm
+    files:
+      - ue1.yaml
+      - wrapper.sh
