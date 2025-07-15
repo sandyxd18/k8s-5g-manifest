@@ -37,3 +37,9 @@ kubectl apply -f https://github.com/kubevirt/cluster-network-addons-operator/rel
 kubectl apply -f https://github.com/kubevirt/cluster-network-addons-operator/releases/download/v0.96.0/operator.yaml
 
 kubectl apply -f https://raw.githubusercontent.com/sandyxd18/k8s-5g-manifest/refs/heads/main/networking/network-addons-config.yaml
+
+echo "[+] Install Istio"
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.26.2 TARGET_ARCH=x86_64 sh -
+export PATH="$PATH:$(pwd)/istio-1.26.2/bin"
+echo 'export PATH="$PATH:$(pwd)/istio-1.26.2/bin"' >> ~/.bashrc
+source ~/.bashrc
