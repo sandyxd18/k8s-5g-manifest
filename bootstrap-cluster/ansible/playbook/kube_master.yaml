@@ -1,10 +1,15 @@
 - name: Kubernetes master node setup
   hosts: master
   become: yes
-  vars:
-    istio_version: "1.26.2"
-    helm_version: "3.17.3"
-    helm_filename: "helm-v3.17.3-linux-amd64.tar.gz"
+  vars_prompt:
+    - name: istio_version
+      prompt: "Enter the Istio version (e.g., 1.26.2):"
+      default: "1.26.2"
+      private: no
+    - name: helm_version
+      prompt: "Enter the Helm version (e.g., 3.17.3):"
+      default: "3.17.3"
+      private: no
   tasks:
     - name: Install apt dependencies
       apt:
@@ -17,13 +22,13 @@
   
     - name: Download Helm tarball
       get_url:
-        url: "https://get.helm.sh/{{ helm_filename }}"
-        dest: "/tmp/{{ helm_filename }}"
+        url: "https://get.helm.sh/helm-v{{ helm_version }}-linux-amd64.tar.gz"
+        dest: "/tmp/helm-v{{ helm_version }}-linux-amd64.tar.gz"
       timeout: 60
     
     - name: Extract Helm tarball
       unarchive:
-        src: "/tmp/{{ helm_filename }}"
+        src: "/tmp/helm-v{{ helm_version }}-linux-amd64.tar.gz"
         dest: /tmp
         remote_src: yes
       timeout: 60

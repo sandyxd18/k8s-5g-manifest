@@ -1,6 +1,10 @@
 - name: Kubernetes Cluster Creation
   hosts: master
   become: yes
+  vars_prompt:
+    - name: local_user
+      prompt: "Enter the local user name (e.g., sandy):"
+      private: no
   tasks:
     - name: Create an empty file for Kubeadm configuration
       copy:
@@ -24,12 +28,12 @@
     - name: Initialize the cluster
       shell: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml >> cluster_initialized.log
       args:
-        chdir: /home/sandy
+        chdir: /home/{{ local_user }}
         creates: cluster_initialized.log
 
     - name: Create .kube directory
       become: yes
-      become_user: sandy
+      become_user: {{ local_user }}
       file:
         path: $HOME/.kube
         state: directory
@@ -38,6 +42,6 @@
     - name: Copy admin.conf to User's kube config
       copy:
         src: /etc/kubernetes/admin.conf
-        dest: /home/sandy/.kube/config
+        dest: /home/{{ local_user }}/.kube/config
         remote_src: yes
-        owner: sandy
+        owner: {{ local_user }}
