@@ -1,0 +1,18 @@
+- name: Install OVS and configure bridge on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install OVS package
+      apt:
+        name: openvswitch-switch
+        state: present
+        update_cache: yes
+      timeout: 60
+    
+    - name: Create OVS bridge n3br
+      command: ovs-vsctl --may-exist add-br n3br
+      timeout: 60
+
+    - name: Create OVS bridge n4br
+      command: ovs-vsctl --may-exist add-br n4br
+      timeout: 60

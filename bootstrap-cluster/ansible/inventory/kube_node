@@ -1,0 +1,6 @@
+[master]
+192.168.22.160 ansible_user=sandy
+
+[worker]
+192.168.22.161 ansible_user=sandy
+192.168.22.162 ansible_user=sandy

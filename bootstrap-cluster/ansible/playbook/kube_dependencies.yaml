@@ -1,0 +1,176 @@
+- name: Kubernetes Dependencies
+  hosts: all
+  become: yes
+  vars_prompt:
+    - name: kube_version
+      prompt: "Enter the Kubernetes version (e.g., 1.32.0):"
+      default: "1.32.0"
+      private: no
+  tasks:
+    - name: Updates
+      apt:
+        update_cache: yes
+
+    - name: Reboot
+      reboot:
+
+    - name: Install basic packages
+      apt:
+        name:
+          - vim
+          - tmux
+          - git
+          - curl
+          - iproute2
+          - iputils-ping
+          - iperf3
+          - tcpdump
+          - python3-pip
+          - jq
+        update_cache: yes
+        state: present
+      tags: [basic]
+
+    - name: Install virtualenv via pip
+      pip:
+        name: virtualenv
+        executable: pip3
+      tags: [basic]
+
+    - name: Disable swap
+      shell: |
+        swapoff -a
+        sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+      args:
+        warn: false
+      tags: [swap]
+
+    - name: Load kernel modules
+      copy:
+        dest: /etc/modules-load.d/containerd.conf
+        content: |
+          overlay
+          br_netfilter
+      tags: [kernel-modules]
+
+    - name: Modprobe kernel modules
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+      tags: [kernel-modules]
+
+    - name: Set sysctl parameters
+      copy:
+        dest: /etc/sysctl.d/k8s.conf
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward = 1
+      tags: [sysctl]
+
+    - name: Apply sysctl parameters
+      command: sysctl --system
+      tags: [sysctl]
+
+    - name: Install containerd dependencies
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+
+    - name: Create keyring directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+      tags: [containerd]
+
+    - name: Add Docker apt-key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+        force: yes
+      tags: [containerd]
+
+    - name: Add Docker repository
+      copy:
+        dest: /etc/apt/sources.list.d/docker.list
+        content: |
+          deb [arch={{ ansible_architecture }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+      tags: [containerd]
+
+    - name: Install containerd
+      apt:
+        name: containerd.io
+        update_cache: yes
+        state: present
+      tags: [containerd]
+
+    - name: Configure containerd with systemd cgroup
+      shell: |
+        containerd config default > /etc/containerd/config.toml
+        sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+      tags: [containerd]
+
+    - name: Restart and enable containerd
+      systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+      tags: [containerd]
+
+    - name: Install Kubernetes repo dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gpg
+        state: present
+      tags: [kubernetes]
+
+    - name: Add Kubernetes GPG key
+      ansible.builtin.get_url:
+        url: "https://pkgs.k8s.io/core:/stable:/v{{ kube_version | regex_replace('\\.\\d+$', '') }}/deb/Release.key"
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        mode: '0644'
+      tags: [kubernetes]
+
+    - name: Add Kubernetes repository
+      copy:
+        dest: /etc/apt/sources.list.d/kubernetes.list
+        content: |
+          deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ kube_version | regex_replace('\\.\\d+$', '') }}/deb/ /
+      tags: [kubernetes]
+
+    - name: Install Kubernetes components
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        update_cache: yes
+        state: present
+      tags: [kubernetes]
+
+    - name: Hold Kubernetes packages
+      apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: hold
+      tags: [kubernetes]
+
+    - name: Enable kubelet
+      systemd:
+        name: kubelet
+        enabled: yes
+        state: started
+      tags: [kubernetes]
