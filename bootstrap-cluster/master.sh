@@ -2,6 +2,14 @@
 
 echo "=== Kubernetes Installation Script ==="
 
+echo "[+] Install Istio"
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.26.2 TARGET_ARCH=x86_64 sh -
+export PATH="$PATH:$(pwd)/istio-1.26.2/bin"
+echo 'export PATH="$PATH:$(pwd)/istio-1.26.2/bin"' >> ~/.bashrc
+source ~/.bashrc
+istioctl x precheck
+istioctl install --set profile=demo -y
+
 echo "[+] Install Helm"
 sudo apt-get install apt-transport-https wget --yes
 wget https://get.helm.sh/helm-v3.17.3-linux-amd64.tar.gz
@@ -17,7 +25,7 @@ echo "[+] Install Multus CNI"
 git -C build/multus-cni pull || git clone https://github.com/k8snetworkplumbingwg/multus-cni.git build/multus-cni
 cd build/multus-cni
 cat ./deployments/multus-daemonset.yml | kubectl apply -f -
-cd ..
+cd ~
 
 echo "[+] Deploy OpenEBS"
 helm repo add openebs https://openebs.github.io/charts
@@ -38,8 +46,3 @@ kubectl apply -f https://github.com/kubevirt/cluster-network-addons-operator/rel
 
 kubectl apply -f https://raw.githubusercontent.com/sandyxd18/k8s-5g-manifest/refs/heads/main/networking/network-addons-config.yaml
 
-echo "[+] Install Istio"
-curl -L https://istio.io/downloadIstio | ISTIO_VERSION=1.26.2 TARGET_ARCH=x86_64 sh -
-export PATH="$PATH:$(pwd)/istio-1.26.2/bin"
-echo 'export PATH="$PATH:$(pwd)/istio-1.26.2/bin"' >> ~/.bashrc
-source ~/.bashrc
